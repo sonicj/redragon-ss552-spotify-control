@@ -97,16 +97,26 @@ http://127.0.0.1:53999/login
 
 ## Using the Spotify Plugin
 
-After installing the plugin, starting the helper, and logging in to Spotify, set up your buttons in StreamDock.
+After installing the plugin, starting the helper, and logging in to Spotify, add the Spotify actions to your SS-552 buttons one at a time.
 
 1. Open the StreamDock app.
-2. Create a new scene/profile, or select the scene/profile you already use.
-3. Find the action list in StreamDock.
-4. Look for the Spotify plugin category in the action list.
-5. Drag Spotify actions from the action list onto empty keys in your scene/profile.
-6. Click a key after placing an action on it to edit that key's settings in the property inspector.
-7. Arrange the Spotify buttons however you like.
-8. Press the physical keys on the SS-552 to control Spotify.
+2. Create a new scene/profile, or select the scene/profile you want to use.
+3. Find the actions sidebar in StreamDock.
+4. Look for the Spotify plugin category in the actions sidebar.
+5. Drag one Spotify action onto an empty SS-552 key.
+6. Repeat that for each Spotify button you want to add.
+7. Click a configured key in StreamDock to edit that key's settings in the property inspector.
+8. If you added the `Playlist` action, click that Playlist key and configure playlists in its property inspector.
+9. Press the physical keys on the SS-552 to control Spotify.
+
+Each button is configured separately. For example, dragging `Play/Pause` onto one key only creates the play/pause button; drag `Next Track`, `Playlist`, `Like Current Song`, and the other actions onto their own keys too.
+
+Example SS-552 layout:
+
+```text
+Power | Previous | Play/Pause | Next | Shuffle
+Like  | Playlist | Now Playing | Device | Vol+/Vol-
+```
 
 Screenshot/GIF placeholders:
 
