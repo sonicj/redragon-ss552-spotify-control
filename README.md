@@ -124,8 +124,11 @@ Screenshots:
 1. Create a scene (profile) 2. select it 3. edit and rename 4. Expand 5/6. Drag to a slot
 ```
 ![Main Layout](images/main-layout.png)
+```
+Playlist configuration in the property inspector
+```
 ![Playlist_Config](images/playlist-config.png)
-- Example SS-552 Spotify layout
+
 
 Available actions:
 
