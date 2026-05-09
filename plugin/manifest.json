@@ -1,0 +1,143 @@
+{
+  "Actions": [
+    {
+      "UUID": "com.sonic.spotifycontrol.openclose",
+      "Icon": "images/openclose.png",
+      "States": [
+        {
+          "Image": "images/openclose.png",
+          "Title": "",
+          "ShowTitle": false
+        }
+      ],
+      "Name": "Open / Close Spotify",
+      "Tooltip": "Launch or close the Spotify desktop app",
+      "UserTitleEnabled": false,
+      "Controllers": ["Keypad"]
+    },
+    {
+      "UUID": "com.sonic.spotifycontrol.previous",
+      "Icon": "images/previous.png",
+      "States": [
+        {
+          "Image": "images/previous.png",
+          "Title": "",
+          "ShowTitle": false
+        }
+      ],
+      "Name": "Previous",
+      "Tooltip": "Previous track",
+      "UserTitleEnabled": false,
+      "Controllers": ["Keypad"]
+    },
+    {
+      "UUID": "com.sonic.spotifycontrol.playpause",
+      "Icon": "images/playpause.png",
+      "States": [
+        {
+          "Image": "images/playpause.png",
+          "Title": "",
+          "ShowTitle": false
+        }
+      ],
+      "Name": "Play / Pause",
+      "Tooltip": "Play or pause Spotify",
+      "UserTitleEnabled": false,
+      "Controllers": ["Keypad"]
+    },
+    {
+      "UUID": "com.sonic.spotifycontrol.next",
+      "Icon": "images/next.png",
+      "States": [
+        {
+          "Image": "images/next.png",
+          "Title": "",
+          "ShowTitle": false
+        }
+      ],
+      "Name": "Next",
+      "Tooltip": "Next track",
+      "UserTitleEnabled": false,
+      "Controllers": ["Keypad"]
+    },
+    {
+      "UUID": "com.sonic.spotifycontrol.shuffle",
+      "Icon": "images/shuffle.png",
+      "States": [
+        {
+          "Image": "images/shuffle.png",
+          "Title": "",
+          "ShowTitle": false
+        }
+      ],
+      "Name": "Shuffle",
+      "Tooltip": "Toggle shuffle",
+      "UserTitleEnabled": false,
+      "Controllers": ["Keypad"]
+    },
+    {
+      "UUID": "com.sonic.spotifycontrol.like",
+      "Icon": "images/like.png",
+      "States": [
+        {
+          "Image": "images/like.png",
+          "Title": "",
+          "ShowTitle": false
+        }
+      ],
+      "Name": "Like Current Song",
+      "Tooltip": "Add current track to Liked Songs",
+      "UserTitleEnabled": false,
+      "Controllers": ["Keypad"]
+    },
+{
+  "UUID": "com.sonic.spotifycontrol.nowplaying",
+  "Icon": "images/nowplaying.png",
+  "state": 0,
+  "States": [
+    {
+      "Image": "images/nowplaying.png"
+    }
+  ],
+  "Name": "Now Playing",
+  "Tooltip": "Show current track and artist",
+  "UserTitleEnabled": false,
+  "SupportedInMultiActions": false,
+  "Controllers": ["Knob"]
+},
+    {
+      "UUID": "com.sonic.spotifycontrol.playlist",
+      "Icon": "images/playlist.png",
+      "States": [
+        {
+          "Image": "images/playlist.png",
+          "Title": "",
+          "ShowTitle": false
+        }
+      ],
+      "Name": "Play Playlist",
+      "Tooltip": "Play a configured playlist URI",
+      "UserTitleEnabled": false,
+      "Controllers": ["Keypad"],
+      "PropertyInspectorPath": "playlist_pi.html"
+    }
+  ],
+  "Version": "1.0.3",
+  "Name": "Spotify Control",
+  "Icon": "images/plugin.png",
+  "CategoryIcon": "images/plugin.png",
+  "Category": "Spotify",
+  "Description": "Spotify desktop control for Redragon SS552 / StreamDock-compatible devices.",
+  "CodePath": "index.html",
+  "SDKVersion": 1,
+  "Author": "Gary",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.10.179.426"
+  }
+}

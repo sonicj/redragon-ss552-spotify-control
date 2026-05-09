@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Playlist Settings</title>
+  <style>
+    body {
+      font-family: Segoe UI, Arial, sans-serif;
+      background: #111827;
+      color: #ffffff;
+      padding: 12px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 4px;
+      padding: 8px;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      background: #1f2937;
+      color: #ffffff;
+      min-height: 180px;
+      resize: vertical;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <label>
+    Playlists
+    <textarea id="playlistList" placeholder="One per line&#10;Name | spotify:playlist:...&#10;&#10;Example:&#10;Favorites | spotify:playlist:37i9dQZF1DXcBWIGoYBM5M&#10;Rock | spotify:playlist:37i9dQZF1DWXRqgorJj26U"></textarea>
+  </label>
+
+  <div class="hint">
+    Format: <b>Name | spotify:playlist:...</b><br>
+    One playlist per line.
+  </div>
+
+  <script src="playlist_pi.js"></script>
+</body>
+</html>

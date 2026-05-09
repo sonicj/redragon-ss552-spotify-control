@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Spotify Control</title>
+</head>
+<body>
+  <script>
+        let websocket = null;
+    const pollers = {};
+    const playlistHoldTimers = {};
+    const playlistHoldTriggered = {};
+    const visibleContextsByAction = {};
+
+    function registerVisibleContext(action, context) {
+      if (!visibleContextsByAction[action]) {
+        visibleContextsByAction[action] = {};
+      }
+      visibleContextsByAction[action][context] = true;
+    }
+
+    function unregisterVisibleContext(action, context) {
+      if (!visibleContextsByAction[action]) {
+        return;
+      }
+      delete visibleContextsByAction[action][context];
+    }
+
+    function refreshVisibleAction(action, delay) {
+      const contexts = visibleContextsByAction[action];
+      if (!contexts) {
+        return;
+      }
+
+      setTimeout(function () {
+        const keys = Object.keys(contexts);
+        for (let i = 0; i < keys.length; i++) {
+          renderDefaultTile({
+            action: action,
+            context: keys[i]
+          });
+        }
+      }, delay || 0);
+    }
+
+    function postToHelper(endpoint, body) {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "http://127.0.0.1:53999" + endpoint, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.send(body ? JSON.stringify(body) : "{}");
+    }
+
+    function getFromHelper(endpoint, callback, errorCallback) {
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", "http://127.0.0.1:53999" + endpoint, true);
+
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            callback(JSON.parse(xhr.responseText));
+          } catch (e) {
+            if (errorCallback) errorCallback(e);
+          }
+        } else {
+          if (errorCallback) errorCallback(xhr.responseText);
+        }
+      };
+
+      xhr.onerror = function () {
+        if (errorCallback) errorCallback("request failed");
+      };
+
+      xhr.send();
+    }
+
+        function getTextFile(path, callback, errorCallback) {
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", path, true);
+
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          callback(xhr.responseText);
+        } else {
+          if (errorCallback) errorCallback(xhr.responseText);
+        }
+      };
+
+      xhr.onerror = function () {
+        if (errorCallback) errorCallback("request failed");
+      };
+
+      xhr.send();
+    }
+
+    function setSettings(context, payload) {
+      websocket.send(JSON.stringify({
+        event: "setSettings",
+        context: context,
+        payload: payload
+      }));
+    }
+
+    function setImage(context, dataUrl) {
+      websocket.send(JSON.stringify({
+        event: "setImage",
+        context: context,
+        payload: {
+          image: dataUrl,
+          target: 0
+        }
+      }));
+    }
+
+    function setSvgIconTile(context, svgPath, color) {
+      getTextFile(svgPath, function (svgText) {
+        let svg = String(svgText || "").trim();
+
+        svg = svg.replace(/<\?xml[\s\S]*?\?>/g, "");
+        svg = svg.replace(/fill="currentColor"/g, 'fill="' + color + '"');
+        svg = svg.replace(/stroke="currentColor"/g, 'stroke="' + color + '"');
+        svg = svg.replace(/fill="[^"]*"/g, 'fill="' + color + '"');
+        svg = svg.replace(/stroke="[^"]*"/g, 'stroke="' + color + '"');
+
+        if (!/viewBox=/i.test(svg)) {
+          svg = svg.replace("<svg", '<svg viewBox="0 0 256 256"');
+        }
+
+        const encoded = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+        setImage(context, encoded);
+      }, function () {
+        setSimpleTile(context, "Spotify", "Error", "#b91c1c");
+      });
+    }
+
+
+    function setSimpleTile(context, line1, line2, color) {
+    const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144">' +
+        '<rect width="144" height="144" rx="18" fill="' + color + '"/>' +
+        '<text x="72" y="56" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="white">' + escapeXml(shorten(line1, 16)) + '</text>' +
+        '<text x="72" y="86" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="white">' + escapeXml(shorten(line2, 18)) + '</text>' +
+        '</svg>';
+
+    const encoded = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+    setImage(context, encoded);
+    }
+
+    function setWideNowPlayingTile(context, line1, line2) {
+        const title = String(line1 || "").trim();
+        const artist = String(line2 || "").trim();
+
+        function splitIntoLines(text, maxCharsPerLine, maxLines) {
+            if (!text) {
+            return [];
+            }
+
+            const words = text.split(/\s+/);
+            const lines = [];
+            let current = "";
+
+            for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            const testLine = current ? current + " " + word : word;
+
+            if (testLine.length <= maxCharsPerLine) {
+                current = testLine;
+            } else {
+                if (current) {
+                lines.push(current);
+                current = word;
+                } else {
+                lines.push(word);
+                current = "";
+                }
+            }
+
+            if (lines.length === maxLines) {
+                break;
+            }
+            }
+
+            if (lines.length < maxLines && current) {
+            lines.push(current);
+            }
+
+            if (lines.length > maxLines) {
+            lines.length = maxLines;
+            }
+
+            return lines;
+        }
+
+        const titleLines = splitIntoLines(title, 14, 2);
+        const artistLines = splitIntoLines(artist, 26, 2);
+
+        while (titleLines.length < 2) {
+            titleLines.push("");
+        }
+
+        while (artistLines.length < 2) {
+            artistLines.push("");
+        }
+
+        const svg =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="130">' +
+            '<rect width="320" height="130" fill="black"/>' +
+
+            '<text x="160" y="32" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="36" font-weight="700" fill="white">' +
+            escapeXml(titleLines[0]) +
+            '</text>' +
+
+            '<text x="160" y="66" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="36" font-weight="700" fill="white">' +
+            escapeXml(titleLines[1]) +
+            '</text>' +
+
+            '<text x="160" y="96" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="28" fill="#d1d5db">' +
+            escapeXml(artistLines[0]) +
+            '</text>' +
+
+            '<text x="160" y="120" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="28" fill="#d1d5db">' +
+            escapeXml(artistLines[1]) +
+            '</text>' +
+
+            '</svg>';
+
+        const encoded = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+        setImage(context, encoded);
+        }
+
+function setPlaylistTextTile(context, line1, line2) {
+  const title = String(line1 || "").trim();
+  const subtitle = String(line2 || "").trim();
+
+  function splitIntoLines(text, maxCharsPerLine, maxLines) {
+    if (!text) {
+      return [];
+    }
+
+    const words = text.split(/\s+/);
+    const lines = [];
+    let current = "";
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const testLine = current ? current + " " + word : word;
+
+      if (testLine.length <= maxCharsPerLine) {
+        current = testLine;
+      } else {
+        if (current) {
+          lines.push(current);
+          current = word;
+        } else {
+          lines.push(word);
+          current = "";
+        }
+      }
+
+      if (lines.length === maxLines) {
+        break;
+      }
+    }
+
+    if (lines.length < maxLines && current) {
+      lines.push(current);
+    }
+
+    while (lines.length < maxLines) {
+      lines.push("");
+    }
+
+    return lines.slice(0, maxLines);
+  }
+
+  const titleLines = splitIntoLines(title, 12, 2);
+
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144">' +
+
+    '<text x="72" y="44" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="white">' +
+    escapeXml(titleLines[0]) +
+    '</text>' +
+
+    '<text x="72" y="72" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="white">' +
+    escapeXml(titleLines[1]) +
+    '</text>' +
+
+    '<text x="72" y="112" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#d1d5db">' +
+    escapeXml(subtitle) +
+    '</text>' +
+
+    '</svg>';
+
+  const encoded = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+  setImage(context, encoded);
+}
+
+    function escapeXml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+    }
+
+    function shorten(text, max) {
+      if (!text) return "";
+      if (text.length <= max) return text;
+      return text.substring(0, max - 1) + "…";
+    }
+
+    function parsePlaylistOptions(rawText) {
+      const text = String(rawText || "").replace(/\r/g, "");
+      const lines = text.split("\n");
+      const options = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) {
+          continue;
+        }
+
+        const parts = line.split("|");
+        if (parts.length < 2) {
+          continue;
+        }
+
+        const name = parts[0].trim();
+        const uri = parts.slice(1).join("|").trim();
+
+        if (!uri) {
+          continue;
+        }
+
+        options.push({
+          name: name || "Playlist",
+          uri: uri
+        });
+      }
+
+      return options;
+    }
+
+        function stopContextPolling(context) {
+      if (pollers[context]) {
+        clearInterval(pollers[context]);
+        delete pollers[context];
+      }
+    }
+
+    function startNowPlaying(context) {
+      stopContextPolling(context);
+
+      function tick() {
+        getFromHelper("/api/current", function (data) {
+          if (!data || !data.track) {
+            setWideNowPlayingTile(context, "Nothing playing", "");
+            return;
+          }
+
+          const title = data.track || "";
+          const artist = data.artist || "";
+          setWideNowPlayingTile(context, title, artist);
+        }, function () {
+          setWideNowPlayingTile(context, "Spotify offline", "");
+        });
+      }
+
+      tick();
+      pollers[context] = setInterval(tick, 4000);
+    }
+
+    function startPlayPausePolling(context) {
+      stopContextPolling(context);
+
+      function tick() {
+        renderDefaultTile({
+          action: "com.sonic.spotifycontrol.playpause",
+          context: context
+        });
+      }
+
+      tick();
+      pollers[context] = setInterval(tick, 2000);
+    }
+
+    function startShufflePolling(context) {
+      stopContextPolling(context);
+
+      function tick() {
+        renderDefaultTile({
+          action: "com.sonic.spotifycontrol.shuffle",
+          context: context
+        });
+      }
+
+      tick();
+      pollers[context] = setInterval(tick, 2000);
+    }
+
+    function startLikePolling(context) {
+      stopContextPolling(context);
+
+      function tick() {
+        renderDefaultTile({
+          action: "com.sonic.spotifycontrol.like",
+          context: context
+        });
+      }
+
+      tick();
+      pollers[context] = setInterval(tick, 2000);
+    }
+
+    function stopNowPlaying(context) {
+      stopContextPolling(context);
+    }
+
+    function renderDefaultTile(data) {
+      if (data.action === "com.sonic.spotifycontrol.openclose") {
+        getFromHelper("/api/openclose-state", function (resp) {
+          if (resp && resp.is_running) {
+            setSvgIconTile(data.context, "images/svg/power-fill.svg", "#1DB954");
+          } else {
+            setSvgIconTile(data.context, "images/svg/power-fill.svg", "#FFFFFF");
+          }
+        }, function () {
+          setSvgIconTile(data.context, "images/svg/power-fill.svg", "#9CA3AF");
+        });
+        return;
+      }
+
+      if (data.action === "com.sonic.spotifycontrol.previous") {
+        setSvgIconTile(data.context, "images/svg/skip-back-fill.svg", "#FFFFFF");
+        return;
+      }
+
+      if (data.action === "com.sonic.spotifycontrol.playpause") {
+        getFromHelper("/api/current", function (resp) {
+          if (resp && resp.is_playing) {
+            setSvgIconTile(data.context, "images/svg/pause-fill.svg", "#1DB954");
+          } else {
+            setSvgIconTile(data.context, "images/svg/play-fill.svg", "#FFFFFF");
+          }
+        }, function () {
+          setSvgIconTile(data.context, "images/svg/play-fill.svg", "#9CA3AF");
+        });
+        return;
+      }
+
+      if (data.action === "com.sonic.spotifycontrol.next") {
+        setSvgIconTile(data.context, "images/svg/skip-forward-fill.svg", "#FFFFFF");
+        return;
+      }
+
+      if (data.action === "com.sonic.spotifycontrol.shuffle") {
+        getFromHelper("/api/current", function (resp) {
+          if (resp && resp.shuffle_state) {
+            setSvgIconTile(data.context, "images/svg/shuffle-fill.svg", "#1DB954");
+          } else {
+            setSvgIconTile(data.context, "images/svg/shuffle-fill.svg", "#FFFFFF");
+          }
+        }, function () {
+          setSvgIconTile(data.context, "images/svg/shuffle-fill.svg", "#9CA3AF");
+        });
+        return;
+      }
+
+      if (data.action === "com.sonic.spotifycontrol.like") {
+        getFromHelper("/api/current", function (resp) {
+          if (resp && resp.track_id) {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", "http://127.0.0.1:53999/api/current-like-state", true);
+
+            xhr.onload = function () {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  const likeResp = JSON.parse(xhr.responseText);
+                  if (likeResp && likeResp.liked) {
+                    setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#1DB954");
+                  } else {
+                    setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#FFFFFF");
+                  }
+                } catch (e) {
+                  setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
+                }
+              } else {
+                setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
+              }
+            };
+
+            xhr.onerror = function () {
+              setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
+            };
+
+            xhr.send();
+          } else {
+            setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
+          }
+        }, function () {
+          setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
+        });
+        return;
+      }
+
+      if (data.action === "com.sonic.spotifycontrol.nowplaying") {
+        startNowPlaying(data.context);
+        return;
+      }
+
+      if (data.action === "com.sonic.spotifycontrol.playlist") {
+        const settings = (data.payload && data.payload.settings) || {};
+        const options = parsePlaylistOptions(settings.playlistList || "");
+
+        if (options.length === 0) {
+          setPlaylistTextTile(data.context, "Playlist", "Set list");
+          return;
+        }
+
+        getFromHelper("/api/playlist/current", function (resp) {
+          const selected = resp && resp.selected ? resp.selected : options[0];
+          setPlaylistTextTile(data.context, selected.name || "Playlist", "Tap=Cycle Hold=Play");
+        }, function () {
+          setPlaylistTextTile(data.context, options[0].name || "Playlist", "Tap=Cycle Hold=Play");
+        });
+        return;
+      }
+    }
+
+    function restoreActionTile(data, delay) {
+      setTimeout(function () {
+        renderDefaultTile(data);
+      }, delay || 1200);
+    }
+
+    function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, inInfo) {
+      websocket = new WebSocket("ws://127.0.0.1:" + inPort);
+
+      websocket.onopen = function () {
+        websocket.send(JSON.stringify({
+          event: inRegisterEvent,
+          uuid: inPluginUUID
+        }));
+      };
+
+      websocket.onmessage = function (evt) {
+        const data = JSON.parse(evt.data);
+
+          if (data.event === "willAppear") {
+          registerVisibleContext(data.action, data.context);
+          renderDefaultTile(data);
+
+          if (data.action === "com.sonic.spotifycontrol.playpause") {
+            startPlayPausePolling(data.context);
+          }
+
+          if (data.action === "com.sonic.spotifycontrol.shuffle") {
+            startShufflePolling(data.context);
+          }
+
+          if (data.action === "com.sonic.spotifycontrol.like") {
+            startLikePolling(data.context);
+          }
+
+          return;
+        }
+
+        if (data.event === "willDisappear") {
+          unregisterVisibleContext(data.action, data.context);
+          stopNowPlaying(data.context);
+          return;
+        }
+
+        if (data.event === "didReceiveSettings") {
+          if (data.action === "com.sonic.spotifycontrol.playlist") {
+            renderDefaultTile(data);
+          }
+          return;
+        }
+
+        if (data.event !== "keyDown" && data.event !== "keyUp") {
+          return;
+        }
+
+        if (data.action !== "com.sonic.spotifycontrol.playlist" && data.event !== "keyDown") {
+          return;
+        }
+
+        if (data.action === "com.sonic.spotifycontrol.openclose") {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "http://127.0.0.1:53999/api/openclose", true);
+          xhr.setRequestHeader("Content-Type", "application/json");
+
+          xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              restoreActionTile(data, 1200);
+            } else {
+              setSimpleTile(data.context, "Spotify", "Error", "#b91c1c");
+              restoreActionTile(data, 1200);
+            }
+          };
+
+          xhr.onerror = function () {
+            setSimpleTile(data.context, "Spotify", "Error", "#b91c1c");
+            restoreActionTile(data, 1200);
+          };
+
+          xhr.send(JSON.stringify({}));
+          return;
+        }
+
+        if (data.action === "com.sonic.spotifycontrol.playpause") {
+          postToHelper("/api/playpause");
+          refreshVisibleAction("com.sonic.spotifycontrol.playpause", 700);
+          return;
+        }
+
+        if (data.action === "com.sonic.spotifycontrol.next") {
+          setSvgIconTile(data.context, "images/svg/skip-forward-fill.svg", "#1DB954");
+          postToHelper("/api/next");
+          restoreActionTile(data, 350);
+          return;
+        }
+
+        if (data.action === "com.sonic.spotifycontrol.previous") {
+          setSvgIconTile(data.context, "images/svg/skip-back-fill.svg", "#1DB954");
+          postToHelper("/api/previous");
+          restoreActionTile(data, 350);
+          return;
+        }
+
+        if (data.action === "com.sonic.spotifycontrol.shuffle") {
+          postToHelper("/api/shuffle");
+          refreshVisibleAction("com.sonic.spotifycontrol.shuffle", 250);
+          refreshVisibleAction("com.sonic.spotifycontrol.shuffle", 700);
+          return;
+        }
+
+        if (data.action === "com.sonic.spotifycontrol.like") {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "http://127.0.0.1:53999/api/like-current", true);
+          xhr.setRequestHeader("Content-Type", "application/json");
+
+          xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const resp = JSON.parse(xhr.responseText);
+
+                if (resp && resp.liked === true) {
+                  setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#1DB954");
+                } else if (resp && resp.liked === false) {
+                  setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#FFFFFF");
+                } else {
+                  renderDefaultTile(data);
+                }
+              } catch (e) {
+                renderDefaultTile(data);
+              }
+            } else {
+              setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
+            }
+          };
+
+          xhr.onerror = function () {
+            setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
+          };
+
+          xhr.send(JSON.stringify({}));
+          return;
+        }
+
+        if (data.action === "com.sonic.spotifycontrol.playlist") {
+          const settings = (data.payload && data.payload.settings) || {};
+          const options = parsePlaylistOptions(settings.playlistList || "");
+
+          if (options.length === 0) {
+            setPlaylistTextTile(data.context, "Playlist", "Set list");
+            return;
+          }
+
+          if (data.event === "keyDown") {
+            playlistHoldTriggered[data.context] = false;
+
+            postToHelper("/api/playlist/set-options", {
+              options: options
+            });
+
+            playlistHoldTimers[data.context] = setTimeout(function () {
+              playlistHoldTriggered[data.context] = true;
+
+              postToHelper("/api/play-playlist", {});
+              refreshVisibleAction("com.sonic.spotifycontrol.playpause", 700);
+
+              getFromHelper("/api/playlist/current", function (resp) {
+                const selected = resp && resp.selected ? resp.selected : options[0];
+                setPlaylistTextTile(data.context, selected.name || "Playlist", "Playing");
+                restoreActionTile(data, 1200);
+              }, function () {
+                setPlaylistTextTile(data.context, "Playlist", "Playing");
+                restoreActionTile(data, 1200);
+              });
+            }, 500);
+
+            return;
+          }
+
+          if (data.event === "keyUp") {
+            if (playlistHoldTimers[data.context]) {
+              clearTimeout(playlistHoldTimers[data.context]);
+              delete playlistHoldTimers[data.context];
+            }
+
+            if (playlistHoldTriggered[data.context]) {
+              playlistHoldTriggered[data.context] = false;
+              return;
+            }
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "http://127.0.0.1:53999/api/playlist/select-next", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+            xhr.onload = function () {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  const resp = JSON.parse(xhr.responseText);
+                  const name = (resp && resp.name) ? resp.name : "Playlist";
+                  setPlaylistTextTile(data.context, name, "Tap=Cycle Hold=Play");
+                } catch (e) {
+                  setPlaylistTextTile(data.context, "Playlist", "Selected");
+                }
+              } else {
+                setPlaylistTextTile(data.context, "Playlist", "Error");
+              }
+            };
+
+            xhr.onerror = function () {
+              setPlaylistTextTile(data.context, "Playlist", "Error");
+            };
+
+            xhr.send(JSON.stringify({}));
+            return;
+          }
+        }
+      };
+    }
+
+    window.connectElgatoStreamDeckSocket = connectElgatoStreamDeckSocket;
+  </script>
+</body>
+</html>
