@@ -95,23 +95,48 @@ http://127.0.0.1:53999/login
 9. Approve Spotify access.
 10. Open Spotify desktop and start any song once so Spotify has an active playback device.
 
-## Basic Usage
+## Using the Spotify Plugin
 
-Add Spotify actions from the Spotify category in StreamDock.
+After installing the plugin and starting the helper, open the StreamDock app.
 
-Common buttons:
+1. Create a new scene/profile or select the scene/profile you already use.
+2. In the action list, find the Spotify category.
+3. Drag Spotify actions from the action list onto buttons on your SS-552.
+4. Arrange the buttons however you like.
+5. Press the physical buttons on the SS-552 to control Spotify.
 
-- `Open / Close Spotify`
-- `Play / Pause`
-- `Previous`
-- `Next`
+Screenshot/GIF placeholders:
+
+- Adding Spotify buttons to a StreamDock scene
+- Playlist configuration in the property inspector
+- Example SS-552 Spotify layout
+
+Available actions:
+
+- `Open/Close Spotify`
+- `Previous Track`
+- `Play/Pause`
+- `Next Track`
 - `Shuffle`
 - `Like Current Song`
 - `Now Playing`
+- `Playlist`
 - `Switch Spotify Device`
 - `Spotify Volume Up`
 - `Spotify Volume Down`
-- `Play Playlist`
+
+The `Switch Spotify Device` button cycles playback between available Spotify devices, such as your PC, phone, WiiM player, Google speaker, or other Spotify Connect devices.
+
+The `Spotify Volume Up` and `Spotify Volume Down` buttons control the active Spotify playback device volume. They do not control Windows desktop volume.
+
+To configure the `Playlist` button, click the button in StreamDock and use its property inspector. Enter one playlist per line:
+
+```text
+Release Radar | https://open.spotify.com/playlist/37i9dQZEVXbqnb2U7chFug?si=...
+All Songs | spotify:playlist:37i9dQZF1DXcBWIGoYBM5M
+```
+
+Tap the playlist button to cycle through configured playlists. Hold the playlist button for about half a second to play the selected playlist.
 
 ## Playlists
 
