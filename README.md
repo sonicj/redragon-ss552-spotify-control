@@ -1,134 +1,164 @@
-# redragon-ss552-spotify-control
+# Spotify Control for Redragon SS-552 / StreamDock
 
-## Build a release folder
+Control Spotify from a Redragon SS-552 or StreamDock-compatible device, including Spotify Connect speakers.
 
-Run this from PowerShell:
+This plugin adds buttons for playback, liked songs, playlists, device switching, active Spotify-device volume, and a now-playing display. It uses a small local Windows helper so the StreamDock plugin can talk to Spotify safely.
 
-```powershell
-.\build-release.bat
-```
+## Screenshots
 
-Or run the PowerShell script directly:
+Screenshots and GIFs coming soon.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\build-release.ps1
-```
+- Main Spotify action grid placeholder
+- Now Playing display placeholder
+- Playlist selector placeholder
+- Device volume / device switch placeholder
 
-The build creates `release\` and a versioned zip:
+## Features
 
-- `redragon-ss552-spotify-control-vX.X.X.zip`
-- `com.sonic.spotifycontrol.sdPlugin`
-- `helper`
-- `README.md`
+- Open or close Spotify
+- Play / pause
+- Previous / next track
+- Toggle shuffle
+- Like or unlike the current song
+- Show the current track and artist
+- Cycle configured playlists and hold to play
+- Switch between available Spotify playback devices
+- Control the active Spotify device volume, including Spotify Connect speakers
+- Rename Spotify devices locally when Spotify reports an ID-like name
 
-The release copy excludes local config, tokens, device names, playlist state, logs, and dependencies.
+## Supported Hardware
 
-## Run the helper stub
+- Redragon SS-552
+- HotSpot StreamDock
+- StreamDock-compatible devices that support the same plugin format
 
-The helper is currently a local Node.js helper. It can complete Spotify OAuth login and control current playback, next, previous, and shuffle. Some endpoints are still stubs until later steps.
+This project is Windows-focused.
 
-Requirements:
+## Download
 
-- Windows
-- Node.js 18 or newer
+Download the latest release zip from this repository's GitHub Releases page.
 
-From PowerShell:
-
-```powershell
-cd helper
-npm start
-```
-
-The helper listens on:
+Use the zip named like:
 
 ```text
-http://127.0.0.1:53999
+redragon-ss552-spotify-control-vX.X.X.zip
 ```
 
-Quick test:
+## Quick Install
 
-```powershell
-Invoke-RestMethod http://127.0.0.1:53999/api/current
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/playpause
-Invoke-RestMethod http://127.0.0.1:53999/api/openclose-state
+1. Download and unzip the release.
+2. Close StreamDock.
+3. Copy:
+
+```text
+com.sonic.spotifycontrol.sdPlugin
 ```
 
-## Spotify Developer Dashboard setup
+into:
 
-This helper uses Spotify Authorization Code with PKCE. It needs a Spotify Client ID only. Do not add a client secret to this project.
+```text
+C:\Users\<YOUR_USER>\AppData\Roaming\HotSpot\StreamDock\plugins\
+```
+
+4. Start StreamDock again.
+5. Open the release `helper` folder.
+6. Double-click:
+
+```text
+start-helper.bat
+```
+
+The helper runs in the background. You do not need to keep a terminal open.
+
+## Spotify Setup
+
+The helper needs a Spotify Client ID. It does not use a client secret.
 
 1. Go to the Spotify Developer Dashboard: https://developer.spotify.com/dashboard
 2. Create an app.
-3. Open the app settings.
-4. Add this redirect URI exactly:
+3. In the app settings, add this redirect URI exactly:
 
 ```text
 http://127.0.0.1:53999/callback
 ```
 
-Spotify requires the redirect URI used by the helper to match the dashboard entry. For local loopback HTTP, use `127.0.0.1`; do not use `localhost`.
-
-5. Copy your app's Client ID.
-6. Create a local config file from the example:
-
-```powershell
-cd C:\Users\<USER>\Documents\redragon-ss552-spotify-control\helper
-Copy-Item config.example.json config.local.json
-notepad config.local.json
-```
-
-7. Replace `paste-your-spotify-client-id-here` with your Spotify Client ID.
-8. Start the helper:
-
-```powershell
-npm start
-```
-
-9. Open the login URL in your browser:
+4. Copy the app's Client ID.
+5. Run `helper\start-helper.bat`.
+6. If this is your first run, `config.local.json` opens in Notepad.
+7. Paste your Client ID into `spotifyClientId`, save, and run `start-helper.bat` again.
+8. Open:
 
 ```text
 http://127.0.0.1:53999/login
 ```
 
-10. After approving Spotify access, check helper auth status:
+9. Approve Spotify access.
+10. Open Spotify desktop and start any song once so Spotify has an active playback device.
 
-```powershell
-Invoke-RestMethod http://127.0.0.1:53999/api/status
+## Basic Usage
+
+Add Spotify actions from the Spotify category in StreamDock.
+
+Common buttons:
+
+- `Open / Close Spotify`
+- `Play / Pause`
+- `Previous`
+- `Next`
+- `Shuffle`
+- `Like Current Song`
+- `Now Playing`
+- `Switch Spotify Device`
+- `Spotify Volume Up`
+- `Spotify Volume Down`
+- `Play Playlist`
+
+## Playlists
+
+Add the `Play Playlist` action to a key, then open its property inspector.
+
+Enter one playlist per line:
+
+```text
+Release Radar | https://open.spotify.com/playlist/37i9dQZEVXbqnb2U7chFug?si=...
+All Songs | spotify:playlist:37i9dQZF1DXcBWIGoYBM5M
 ```
 
-## Test Spotify playback endpoints
+To get a playlist link:
 
-After Spotify login is complete, open the Spotify desktop app and start playing any track once so Spotify has an active device. Then run:
+1. Open Spotify.
+2. Right-click a playlist.
+3. Choose Share.
+4. Choose Copy link to playlist.
+5. Paste it after `Name |` in the playlist box.
 
-```powershell
-Invoke-RestMethod http://127.0.0.1:53999/api/current
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/playpause
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/playpause
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/next
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/previous
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/shuffle
+Tap the key to cycle playlists. Hold the key for about half a second to play the selected playlist.
+
+## Auto-Start
+
+To start the helper automatically when Windows starts, run:
+
+```text
+helper\install-autostart.bat
 ```
 
-If Spotify is not authenticated, the helper returns `error: "not_authenticated"`. If Spotify is open but no device is active, it returns `error: "no_active_device"`. If the account cannot use playback controls, it returns `error: "premium_required"`.
+To remove auto-start, run:
 
-## Test Spotify device switching
-
-After Spotify login is complete, open Spotify on each device you want to cycle between. Start playback once so Spotify reports active devices. Then run:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:53999/api/devices/current
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/devices/select-next
-Invoke-RestMethod http://127.0.0.1:53999/api/devices/current
-Get-Content .\helper.log -Tail 30
+```text
+helper\uninstall-autostart.bat
 ```
 
-On the SS-552, add the Switch Spotify Device action to a key. Press it to switch playback to the next available Spotify device.
+## Rename Devices
 
-## Rename Spotify devices
+Some Spotify Connect devices show an ID-like name. You can rename them locally.
 
-Some Spotify Connect devices report an ID-like name instead of a friendly name. The helper logs the full `/me/player/devices` response so you can map the device ID to a display name.
+Edit:
 
-Open `helper\config.local.json` and add or edit `deviceNames`:
+```text
+helper\config.local.json
+```
+
+Example:
 
 ```json
 {
@@ -139,108 +169,49 @@ Open `helper\config.local.json` and add or edit `deviceNames`:
 }
 ```
 
-Restart the helper after editing. Then run:
+Restart the helper after editing.
 
-```powershell
-Invoke-RestMethod http://127.0.0.1:53999/api/devices/current
-Get-Content .\helper.log -Tail 80
-```
+## Troubleshooting
 
-Look for `devices raw response` to see every field Spotify returned for each device.
+### Helper not running
 
-## Test Spotify open / close
-
-The power button uses these endpoints:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:53999/api/openclose-state
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/openclose
-Start-Sleep -Seconds 3
-Invoke-RestMethod http://127.0.0.1:53999/api/openclose-state
-Get-Content .\helper.log -Tail 80
-```
-
-Logs show Spotify process detection, launch commands tried, close commands tried, and the final running state.
-
-## Test Spotify device volume
-
-After Spotify login is complete, start playback on the Spotify device you want to control. Then run:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:53999/api/volume/current
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/volume/up
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/volume/down
-Invoke-RestMethod -Method Post -ContentType "application/json" -Body '{"volume_percent":35}' http://127.0.0.1:53999/api/volume/set
-Invoke-RestMethod http://127.0.0.1:53999/api/volume/current
-Get-Content .\helper.log -Tail 30
-```
-
-On the SS-552, add Spotify Volume Up and Spotify Volume Down to keypad buttons. These control the active Spotify playback device, not Windows desktop volume.
-
-## Test Spotify like endpoints
-
-After Spotify login is complete, open Spotify desktop and start playing a track. Then run:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:53999/api/current
-Invoke-RestMethod http://127.0.0.1:53999/api/current-like-state
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/like-current
-Invoke-RestMethod http://127.0.0.1:53999/api/current-like-state
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/like-current
-Invoke-RestMethod http://127.0.0.1:53999/api/current-like-state
-```
-
-The first `POST /api/like-current` toggles the current track's Liked Songs state. The second `POST /api/like-current` toggles it back.
-
-## Test Spotify playlist endpoints
-
-Users can paste the normal Spotify playlist link from Spotify:
-
-1. Open Spotify.
-2. Right-click a playlist.
-3. Choose Share.
-4. Choose Copy link to playlist.
-5. Paste it into the SS-552 playlist box like:
+Open:
 
 ```text
-Release Radar | https://open.spotify.com/playlist/37i9dQZEVXbqnb2U7chFug?si=...
+http://127.0.0.1:53999/api/status
 ```
 
-The helper also accepts `spotify:playlist:37i9dQZEVXbqnb2U7chFug` and raw playlist IDs like `37i9dQZEVXbqnb2U7chFug`. It stores them internally as `spotify:playlist:...`.
+If the page does not load, run:
 
-After Spotify login is complete, open Spotify desktop and start playing any track once so Spotify has an active device. Then run:
-
-```powershell
-$body = @{
-  options = @(
-    @{ name = "Release Radar Link"; uri = "https://open.spotify.com/playlist/37i9dQZEVXbqnb2U7chFug?si=36b5d3c125764d4f" },
-    @{ name = "Release Radar URI"; uri = "spotify:playlist:37i9dQZEVXbqnb2U7chFug" },
-    @{ name = "Release Radar ID"; uri = "37i9dQZEVXbqnb2U7chFug" }
-  )
-} | ConvertTo-Json -Depth 5
-
-Invoke-RestMethod -Method Post -ContentType "application/json" -Body $body http://127.0.0.1:53999/api/playlist/set-options
-Invoke-RestMethod http://127.0.0.1:53999/api/playlist/list
-Invoke-RestMethod http://127.0.0.1:53999/api/playlist/current
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/playlist/select-next
-Invoke-RestMethod http://127.0.0.1:53999/api/playlist/current
-Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/play-playlist
-Get-Content .\helper.log -Tail 30
+```text
+helper\start-helper.bat
 ```
 
-For the SS-552, add the Play Playlist action to a key. In its property inspector, enter playlists as `Name | Spotify playlist link`, one per line. Tap the key to cycle the selected playlist. Hold the key for about half a second to play the selected playlist.
+### Spotify not authenticated
 
-If Spotify returns 404 for personalized playlists such as Discover Weekly or Release Radar, the helper keeps them in your configured list so they remain visible and cyclable. Run this to see each configured playlist and its validation status:
+Open:
 
-```powershell
-Invoke-RestMethod http://127.0.0.1:53999/api/playlist/list
-Get-Content .\helper.log -Tail 50
+```text
+http://127.0.0.1:53999/login
 ```
 
-A 404 means Spotify's Web API could not validate that playlist ID for your account, even if the Spotify app can show the playlist. The helper still tries to play the selected playlist URI; if Spotify also rejects playback, the response shows `playlist_cannot_play` for that selected playlist. For personalized Spotify-made playlists, try following or saving the playlist in Spotify, copying the link again from your own account, opening it in Spotify once, then restarting playback and testing again.
+Approve access again.
 
-Local files that may contain credentials or tokens are ignored by git:
+### No active Spotify device
 
-- `helper/config.local.json`
-- `helper/tokens.local.json`
-- `helper/playlist-state.local.json`
+Open Spotify desktop and start any song once. Spotify Web API controls need an active playback device.
+
+### Device volume does not change
+
+Some Spotify Connect devices do not expose volume control through Spotify. Try switching Spotify playback to the device first, then press the Spotify Volume buttons again.
+
+### Playlist returns 404
+
+Some personalized Spotify-made playlists, including Discover Weekly and Release Radar, can return 404 from Spotify's Web API even when the Spotify app can show them. The helper keeps those playlists visible and still tries playback when selected.
+
+Try opening the playlist in Spotify, following or saving it if possible, copying the link again, and pasting the new link into the playlist box.
+
+## More Documentation
+
+- End-user release guide: [docs/INSTALL.md](docs/INSTALL.md)
+- Developer notes and endpoint tests: [docs/DEVELOPER.md](docs/DEVELOPER.md)
