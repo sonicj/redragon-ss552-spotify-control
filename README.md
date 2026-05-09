@@ -120,7 +120,7 @@ Like  | Playlist | Now Playing | Device | Vol+/Vol-
 
 Screenshot/GIF placeholders:
 
-- Adding Spotify buttons to a StreamDock scene
+![Main Layout](images/main-layout.png)
 - Playlist configuration in the property inspector
 - Example SS-552 Spotify layout
 
