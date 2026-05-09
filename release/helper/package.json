@@ -1,0 +1,13 @@
+{
+  "name": "redragon-ss552-spotify-helper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local helper server for the Redragon SS-552 Spotify Control StreamDock plugin.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

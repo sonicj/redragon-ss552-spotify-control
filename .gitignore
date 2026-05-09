@@ -1,0 +1,21 @@
+# Local helper config and credentials
+helper/config.local.json
+helper/tokens.local.json
+helper/playlist-state.local.json
+helper/device-state.local.json
+helper/*.log
+release/helper/config.local.json
+release/helper/tokens.local.json
+release/helper/playlist-state.local.json
+release/helper/device-state.local.json
+release/helper/*.log
+
+# Local dependency/build output
+helper/node_modules/
+helper/dist/
+release/helper/node_modules/
+release/helper/dist/
+
+# OS/editor noise
+Thumbs.db
+.DS_Store

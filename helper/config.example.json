@@ -1,0 +1,6 @@
+{
+  "spotifyClientId": "paste-your-spotify-client-id-here",
+  "deviceNames": {
+    "paste-your-spotify-device-id-here": "Living Room Speaker"
+  }
+}
