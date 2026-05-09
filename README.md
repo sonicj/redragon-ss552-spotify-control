@@ -97,13 +97,16 @@ http://127.0.0.1:53999/login
 
 ## Using the Spotify Plugin
 
-After installing the plugin and starting the helper, open the StreamDock app.
+After installing the plugin, starting the helper, and logging in to Spotify, set up your buttons in StreamDock.
 
-1. Create a new scene/profile or select the scene/profile you already use.
-2. In the action list, find the Spotify category.
-3. Drag Spotify actions from the action list onto buttons on your SS-552.
-4. Arrange the buttons however you like.
-5. Press the physical buttons on the SS-552 to control Spotify.
+1. Open the StreamDock app.
+2. Create a new scene/profile, or select the scene/profile you already use.
+3. Find the action list in StreamDock.
+4. Look for the Spotify plugin category in the action list.
+5. Drag Spotify actions from the action list onto empty keys in your scene/profile.
+6. Click a key after placing an action on it to edit that key's settings in the property inspector.
+7. Arrange the Spotify buttons however you like.
+8. Press the physical keys on the SS-552 to control Spotify.
 
 Screenshot/GIF placeholders:
 
@@ -129,24 +132,26 @@ The `Switch Spotify Device` button cycles playback between available Spotify dev
 
 The `Spotify Volume Up` and `Spotify Volume Down` buttons control the active Spotify playback device volume. They do not control Windows desktop volume.
 
-To configure the `Playlist` button, click the button in StreamDock and use its property inspector. Enter one playlist per line:
-
-```text
-Release Radar | https://open.spotify.com/playlist/37i9dQZEVXbqnb2U7chFug?si=...
-All Songs | spotify:playlist:37i9dQZF1DXcBWIGoYBM5M
-```
-
-Tap the playlist button to cycle through configured playlists. Hold the playlist button for about half a second to play the selected playlist.
-
 ## Playlists
 
-Add the `Play Playlist` action to a key, then open its property inspector.
+Playlist setup happens inside the Playlist key's property inspector.
 
-Enter one playlist per line:
+1. Open StreamDock.
+2. Select your scene/profile.
+3. Drag the `Playlist` action onto a key.
+4. Click that configured Playlist key.
+5. In the property inspector, find the playlist text box.
+6. Enter one playlist per line using this format:
 
 ```text
-Release Radar | https://open.spotify.com/playlist/37i9dQZEVXbqnb2U7chFug?si=...
-All Songs | spotify:playlist:37i9dQZF1DXcBWIGoYBM5M
+Button Name | Spotify playlist link
+```
+
+Example:
+
+```text
+Chill Mix | https://open.spotify.com/playlist/PASTE_PLAYLIST_LINK_HERE
+Workout | https://open.spotify.com/playlist/PASTE_ANOTHER_PLAYLIST_LINK_HERE
 ```
 
 To get a playlist link:
@@ -157,7 +162,10 @@ To get a playlist link:
 4. Choose Copy link to playlist.
 5. Paste it after `Name |` in the playlist box.
 
-Tap the key to cycle playlists. Hold the key for about half a second to play the selected playlist.
+Playlist button behavior:
+
+- Tap the Playlist key to cycle through your configured playlists.
+- Hold the Playlist key for about half a second to play the currently selected playlist.
 
 ## Auto-Start
 
