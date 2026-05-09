@@ -5,6 +5,8 @@ Control Spotify from a Redragon SS-552 or StreamDock-compatible device, includin
 This plugin adds buttons for playback, liked songs, playlists, device switching, active Spotify-device volume, and a now-playing display. It uses a small local Windows helper so the StreamDock plugin can talk to Spotify safely.
 ## Screenshot
 
+![Device](images/device.jpg)
+
 ![Sample Layout](images/sample_layout.png)
 
 ## Features
