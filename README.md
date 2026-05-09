@@ -7,8 +7,6 @@ This plugin adds buttons for playback, liked songs, playlists, device switching,
 
 ![Device](images/device.jpg)
 
-![Sample Layout](images/sample_layout.png)
-
 ## Features
 
 - Open or close Spotify
