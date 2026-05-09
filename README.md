@@ -72,7 +72,7 @@ Spotify requires the redirect URI used by the helper to match the dashboard entr
 6. Create a local config file from the example:
 
 ```powershell
-cd C:\Users\sonic\Documents\redragon-ss552-spotify-control\helper
+cd C:\Users\<USER>\Documents\redragon-ss552-spotify-control\helper
 Copy-Item config.example.json config.local.json
 notepad config.local.json
 ```

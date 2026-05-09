@@ -34,7 +34,7 @@ C:\Users\<YOUR_USER>\AppData\Roaming\HotSpot\StreamDock\plugins\
 For example:
 
 ```text
-C:\Users\Gary\AppData\Roaming\HotSpot\StreamDock\plugins\com.sonic.spotifycontrol.sdPlugin
+C:\Users\<YOUR_USER>\AppData\Roaming\HotSpot\StreamDock\plugins\com.sonic.spotifycontrol.sdPlugin
 ```
 
 3. Start StreamDock again.
