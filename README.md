@@ -118,8 +118,9 @@ Power | Previous | Play/Pause | Next | Shuffle
 Like  | Playlist | Now Playing | Device | Vol+/Vol-
 ```
 
-Screenshot/GIF placeholders:
+Screenshots:
 
+- 1. Create a scene (profile) 2. select ti 3. edit and rename 4. Expand 5. Drag to a slot
 ![Main Layout](images/main-layout.png)
 - Playlist configuration in the property inspector
 - Example SS-552 Spotify layout
