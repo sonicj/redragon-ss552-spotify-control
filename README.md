@@ -32,10 +32,10 @@ This project is Windows-focused.
 
 Download the latest release zip from this repository's GitHub Releases page.
 
-Use the zip named like:
+For v1.0.4, use:
 
 ```text
-redragon-ss552-spotify-control-vX.X.X.zip
+redragon-ss552-spotify-control-v1.0.4.zip
 ```
 
 ## Quick Install
@@ -62,7 +62,7 @@ C:\Users\<YOUR_USER>\AppData\Roaming\HotSpot\StreamDock\plugins\
 start-helper.bat
 ```
 
-The helper runs in the background. You do not need to keep a terminal open.
+The helper runs in the background. You do not need to keep a terminal open. After Spotify setup is complete, run `helper\install-autostart-task.bat` once so Windows starts the helper silently when you sign in.
 
 ## Spotify Setup
 
@@ -179,11 +179,15 @@ Playlist button behavior:
 
 ## Auto-Start
 
-Recommended: to start the helper automatically when you sign in to Windows without a UAC prompt, run:
+Recommended for v1.0.4: to start the helper automatically and silently when you sign in to Windows, run this once from the extracted release:
 
 ```text
 helper\install-autostart-task.bat
 ```
+
+This creates the scheduled task `Spotify Control Helper` for the current Windows user. It uses normal privileges (`/RL LIMITED`), runs immediately at user logon, and does not require administrator rights or a UAC prompt.
+
+The installer also removes the old Startup-folder shortcut from earlier packages if it exists, so normal Windows startup does not launch `start-helper.bat` in a visible window.
 
 To remove the scheduled task, run:
 
@@ -191,21 +195,7 @@ To remove the scheduled task, run:
 helper\uninstall-autostart-task.bat
 ```
 
-This creates a current-user scheduled task with normal privileges. It does not disable UAC and does not require administrator rights.
-
-Alternative: to use the Startup folder shortcut instead, run:
-
-```text
-helper\install-autostart.bat
-```
-
-To remove auto-start, run:
-
-```text
-helper\uninstall-autostart.bat
-```
-
-See [docs/UAC_AUTOSTART.md](docs/UAC_AUTOSTART.md) for the full Windows 10/11 design, Kotlin launcher snippets, and the Windows service tradeoff.
+See [docs/UAC_AUTOSTART.md](docs/UAC_AUTOSTART.md) for the Windows 10/11 Task Scheduler design.
 
 ## Rename Devices
 

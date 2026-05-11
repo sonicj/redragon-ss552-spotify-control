@@ -167,7 +167,7 @@
       "PropertyInspectorPath": "playlist_pi.html"
     }
   ],
-  "Version": "1.0.3",
+  "Version": "1.0.4",
   "Name": "Spotify Control",
   "Icon": "images/plugin.png",
   "CategoryIcon": "images/plugin.png",

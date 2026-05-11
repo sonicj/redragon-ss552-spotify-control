@@ -15,7 +15,7 @@ try {
   $nodeCommand = Get-Command node.exe -ErrorAction Stop
 
   if (-not (Test-Path -LiteralPath $configPath)) {
-    Write-AutostartLog "config.local.json is missing. Run start-helper.bat once to create and configure it."
+    Write-AutostartLog "config.local.json is missing. Run start-helper.bat once from the helper folder to create and configure it."
     exit 0
   }
 

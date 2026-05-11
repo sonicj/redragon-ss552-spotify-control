@@ -2,10 +2,7 @@
 
 The helper does not need administrator rights. Keep the Spotify Web API helper as a normal per-user process on `127.0.0.1:53999`.
 
-Use one of these designs:
-
-1. Preferred MVP: Task Scheduler, current user, `Run only when user is logged on`, normal privileges.
-2. Optional service: only if you later need the helper before sign-in. The service install/update step requires elevation, but normal boot startup does not show UAC.
+Use the v1.0.4 Task Scheduler design: current user, normal privileges, and immediate run at user logon. Do not use the old Startup-folder shortcut flow.
 
 Do not disable UAC system-wide and do not request `requireAdministrator` in the app manifest.
 
@@ -33,7 +30,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe)
             packageName = "Spotify Control Helper"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.4"
             windows {
                 perUserInstall = true
                 menuGroup = "Spotify Control Helper"
@@ -65,7 +62,13 @@ The task runs `helper\start-helper-task.ps1`, which:
 - starts `node.exe helper\server.js` hidden
 - logs startup results to `helper\helper-autostart.log`
 
-The task is created with `/RL LIMITED`, so it runs as the signed-in user without an elevation prompt on Windows 10 and Windows 11.
+The task is named `Spotify Control Helper` and is created with `/SC ONLOGON` and `/RL LIMITED`. No `/DELAY` is used, so Windows starts it immediately at sign-in. The task runs as the signed-in user without an elevation prompt on Windows 10 and Windows 11.
+
+The installer also removes the legacy Startup-folder shortcut if it exists:
+
+```text
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Spotify Control Helper.lnk
+```
 
 ## Kotlin Launcher Option
 

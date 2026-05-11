@@ -1,4 +1,4 @@
-# Spotify Control for Redragon StreamDock
+# Spotify Control for Redragon StreamDock v1.0.4
 
 This release contains:
 
@@ -85,11 +85,15 @@ helper\start-helper-console.bat
 
 ## Optional Auto-Start With Windows
 
-Recommended: to start the helper automatically when you sign in to Windows without a UAC prompt, double-click:
+Recommended for v1.0.4: to start the helper automatically and silently when you sign in to Windows, double-click this once from the extracted release:
 
 ```text
 helper\install-autostart-task.bat
 ```
+
+This creates the scheduled task `Spotify Control Helper` for the current Windows user. It uses normal privileges (`/RL LIMITED`), runs immediately at user logon, and does not require administrator rights or a UAC prompt.
+
+The installer also removes the old Startup-folder shortcut from earlier packages if it exists, so normal Windows startup does not launch `start-helper.bat` in a visible window.
 
 To remove this scheduled task, double-click:
 
@@ -97,21 +101,7 @@ To remove this scheduled task, double-click:
 helper\uninstall-autostart-task.bat
 ```
 
-This uses Windows Task Scheduler with normal current-user privileges. It does not disable UAC and does not require administrator rights.
-
-Alternative: to use the Startup folder shortcut instead, double-click:
-
-```text
-helper\install-autostart.bat
-```
-
-To remove auto-start, double-click:
-
-```text
-helper\uninstall-autostart.bat
-```
-
-After reboot, the scheduled task or startup shortcut launches the helper in the background. If you are already logged in to Spotify, the StreamDock buttons should work after Spotify has an active device.
+After reboot or sign-out/sign-in, the scheduled task launches the helper in the background. If you are already logged in to Spotify, the StreamDock buttons should work after Spotify has an active device.
 
 ## Add Playlist Buttons
 
