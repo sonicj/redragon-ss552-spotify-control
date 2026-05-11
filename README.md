@@ -179,7 +179,21 @@ Playlist button behavior:
 
 ## Auto-Start
 
-To start the helper automatically when Windows starts, run:
+Recommended: to start the helper automatically when you sign in to Windows without a UAC prompt, run:
+
+```text
+helper\install-autostart-task.bat
+```
+
+To remove the scheduled task, run:
+
+```text
+helper\uninstall-autostart-task.bat
+```
+
+This creates a current-user scheduled task with normal privileges. It does not disable UAC and does not require administrator rights.
+
+Alternative: to use the Startup folder shortcut instead, run:
 
 ```text
 helper\install-autostart.bat
@@ -190,6 +204,8 @@ To remove auto-start, run:
 ```text
 helper\uninstall-autostart.bat
 ```
+
+See [docs/UAC_AUTOSTART.md](docs/UAC_AUTOSTART.md) for the full Windows 10/11 design, Kotlin launcher snippets, and the Windows service tradeoff.
 
 ## Rename Devices
 

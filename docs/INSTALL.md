@@ -85,7 +85,21 @@ helper\start-helper-console.bat
 
 ## Optional Auto-Start With Windows
 
-To start the helper automatically when you sign in to Windows, double-click:
+Recommended: to start the helper automatically when you sign in to Windows without a UAC prompt, double-click:
+
+```text
+helper\install-autostart-task.bat
+```
+
+To remove this scheduled task, double-click:
+
+```text
+helper\uninstall-autostart-task.bat
+```
+
+This uses Windows Task Scheduler with normal current-user privileges. It does not disable UAC and does not require administrator rights.
+
+Alternative: to use the Startup folder shortcut instead, double-click:
 
 ```text
 helper\install-autostart.bat
@@ -97,7 +111,7 @@ To remove auto-start, double-click:
 helper\uninstall-autostart.bat
 ```
 
-After reboot, the startup shortcut runs `helper\start-helper.bat`, which launches the helper in the background. If you are already logged in to Spotify, the StreamDock buttons should work after Spotify has an active device.
+After reboot, the scheduled task or startup shortcut launches the helper in the background. If you are already logged in to Spotify, the StreamDock buttons should work after Spotify has an active device.
 
 ## Add Playlist Buttons
 

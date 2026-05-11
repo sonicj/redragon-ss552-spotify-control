@@ -34,7 +34,10 @@ $helperFiles = @(
   "start-helper-console.bat",
   "stop-helper.bat",
   "install-autostart.bat",
-  "uninstall-autostart.bat"
+  "uninstall-autostart.bat",
+  "start-helper-task.ps1",
+  "install-autostart-task.bat",
+  "uninstall-autostart-task.bat"
 )
 
 foreach ($file in $helperFiles) {
