@@ -3,27 +3,21 @@ setlocal
 
 set "HELPER_DIR=%~dp0"
 set "TASK_NAME=Spotify Control Helper"
-set "TASK_SCRIPT=%HELPER_DIR%start-helper-task.ps1"
-set "TASK_ACTION=powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"%TASK_SCRIPT%\""
-set "OLD_STARTUP_SHORTCUT=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Spotify Control Helper.lnk"
+set "INSTALL_SCRIPT=%HELPER_DIR%install-autostart-task.ps1"
 
-if not exist "%TASK_SCRIPT%" (
-  echo Missing "%TASK_SCRIPT%".
+if not exist "%INSTALL_SCRIPT%" (
+  echo Missing "%INSTALL_SCRIPT%".
   pause
   exit /b 1
 )
 
-schtasks /Create /TN "%TASK_NAME%" /SC ONLOGON /TR "%TASK_ACTION%" /RL LIMITED /F
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%INSTALL_SCRIPT%"
 if errorlevel 1 (
   echo.
   echo Could not create the scheduled task.
   echo Make sure you are running as the same Windows user who will use StreamDock.
   pause
   exit /b 1
-)
-
-if exist "%OLD_STARTUP_SHORTCUT%" (
-  del "%OLD_STARTUP_SHORTCUT%" >nul 2>nul
 )
 
 echo.

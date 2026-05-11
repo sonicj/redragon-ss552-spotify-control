@@ -33,6 +33,7 @@ $helperFiles = @(
   "start-helper.bat",
   "start-helper-console.bat",
   "stop-helper.bat",
+  "install-autostart-task.ps1",
   "start-helper-task.ps1",
   "install-autostart-task.bat",
   "uninstall-autostart-task.bat"

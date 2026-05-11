@@ -62,7 +62,7 @@ The task runs `helper\start-helper-task.ps1`, which:
 - starts `node.exe helper\server.js` hidden
 - logs startup results to `helper\helper-autostart.log`
 
-The task is named `Spotify Control Helper` and is created with `/SC ONLOGON` and `/RL LIMITED`. No `/DELAY` is used, so Windows starts it immediately at sign-in. The task runs as the signed-in user without an elevation prompt on Windows 10 and Windows 11.
+The task is named `Spotify Control Helper` and is created through PowerShell's Task Scheduler API with an `AtLogOn` trigger for the current user and `RunLevel Limited`, equivalent to `/SC ONLOGON` and `/RL LIMITED`. No delay is configured, so Windows starts it immediately at sign-in. The task runs as the signed-in user without an elevation prompt on Windows 10 and Windows 11.
 
 The installer also removes the legacy Startup-folder shortcut if it exists:
 
