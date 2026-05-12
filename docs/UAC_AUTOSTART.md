@@ -60,9 +60,12 @@ The task runs `helper\start-helper-task.ps1`, which:
 - exits quietly if the user has not configured `config.local.json`
 - exits quietly if the helper is already running
 - starts `node.exe helper\server.js` hidden
-- logs startup results to `helper\helper-autostart.log`
+- logs startup results to `%APPDATA%\RedragonSpotifyControl\logs\autostart.log`
+- redirects early Node stdout/stderr to `%APPDATA%\RedragonSpotifyControl\logs\node-autostart.stdout.log` and `node-autostart.stderr.log`
 
 The task is named `Spotify Control Helper` and is created through PowerShell's Task Scheduler API with an `AtLogOn` trigger for the current user and `RunLevel Limited`, equivalent to `/SC ONLOGON` and `/RL LIMITED`. No delay is configured, so Windows starts it immediately at sign-in. The task runs as the signed-in user without an elevation prompt on Windows 10 and Windows 11.
+
+Task Scheduler showing `Ready` usually means the task is idle and ready to run. Use the autostart log to confirm whether a logon/manual run invoked the script and whether Node stayed running.
 
 The installer also removes the legacy Startup-folder shortcut if it exists:
 

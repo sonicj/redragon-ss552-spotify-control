@@ -103,6 +103,18 @@ helper\uninstall-autostart-task.bat
 
 After reboot or sign-out/sign-in, the scheduled task launches the helper in the background. If you are already logged in to Spotify, the StreamDock buttons should work after Spotify has an active device.
 
+Auto-start diagnostics are written to:
+
+```text
+%APPDATA%\RedragonSpotifyControl\logs\autostart.log
+```
+
+The helper server writes to:
+
+```text
+%APPDATA%\RedragonSpotifyControl\logs\helper.log
+```
+
 ## Add Playlist Buttons
 
 1. In StreamDock, add the Play Playlist action to a key.
@@ -173,6 +185,23 @@ Invoke-RestMethod http://127.0.0.1:53999/api/status
 
 `spotify_authenticated` should be `True`.
 
+### Only Open/Close Spotify Works
+
+The Open/Close button uses local Windows process control. Playback, shuffle, liked songs, playlists, device switching, volume, and now-playing require Spotify authentication and an active Spotify playback device.
+
+Check:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:53999/api/status
+Invoke-RestMethod http://127.0.0.1:53999/api/current
+```
+
+If `spotify_client_id_configured` or `spotify_authenticated` is `False`, finish Spotify setup and open:
+
+```text
+http://127.0.0.1:53999/login
+```
+
 ### No Active Spotify Device
 
 Open Spotify desktop and start any song once. Spotify Web API controls need an active playback device.
@@ -203,8 +232,37 @@ To inspect playlist status and logs:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:53999/api/playlist/list
-Get-Content .\helper\helper.log -Tail 50
+Get-Content "$env:APPDATA\RedragonSpotifyControl\logs\helper.log" -Tail 50
 ```
+
+### Old Playlists Still Appear After Reinstall
+
+The release zip does not contain playlists. Playlist text is saved by StreamDock as per-key settings in profiles under:
+
+```text
+%APPDATA%\HotSpot\StreamDock\profiles\
+```
+
+The helper also mirrors the last selected playlist state beside the extracted helper:
+
+```text
+helper\playlist-state.local.json
+```
+
+To find StreamDock profile files that still contain playlist settings:
+
+```powershell
+Get-ChildItem "$env:APPDATA\HotSpot\StreamDock\profiles" -Recurse -Filter manifest.json | Select-String -Pattern "playlistList"
+```
+
+To remove helper-side local data from an extracted release folder:
+
+```powershell
+Remove-Item .\helper\config.local.json,.\helper\tokens.local.json,.\helper\playlist-state.local.json,.\helper\device-state.local.json -ErrorAction SilentlyContinue
+Remove-Item "$env:APPDATA\RedragonSpotifyControl" -Recurse -Force -ErrorAction SilentlyContinue
+```
+
+To fully clear StreamDock key settings, remove the Spotify keys from your StreamDock profile or delete/recreate the affected StreamDock profile in the StreamDock app.
 
 ### Stop the Helper
 

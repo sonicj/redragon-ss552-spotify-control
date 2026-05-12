@@ -105,7 +105,7 @@ Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/shuffle
 Invoke-RestMethod http://127.0.0.1:53999/api/devices/current
 Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/devices/select-next
 Invoke-RestMethod http://127.0.0.1:53999/api/devices/current
-Get-Content .\helper.log -Tail 30
+Get-Content "$env:APPDATA\RedragonSpotifyControl\logs\helper.log" -Tail 30
 ```
 
 ### Open / close Spotify
@@ -115,7 +115,7 @@ Invoke-RestMethod http://127.0.0.1:53999/api/openclose-state
 Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/openclose
 Start-Sleep -Seconds 3
 Invoke-RestMethod http://127.0.0.1:53999/api/openclose-state
-Get-Content .\helper.log -Tail 80
+Get-Content "$env:APPDATA\RedragonSpotifyControl\logs\helper.log" -Tail 80
 ```
 
 ### Volume
@@ -126,7 +126,7 @@ Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/volume/up
 Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/volume/down
 Invoke-RestMethod -Method Post -ContentType "application/json" -Body '{"volume_percent":35}' http://127.0.0.1:53999/api/volume/set
 Invoke-RestMethod http://127.0.0.1:53999/api/volume/current
-Get-Content .\helper.log -Tail 30
+Get-Content "$env:APPDATA\RedragonSpotifyControl\logs\helper.log" -Tail 30
 ```
 
 ### Liked songs
@@ -157,7 +157,7 @@ Invoke-RestMethod http://127.0.0.1:53999/api/playlist/current
 Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/playlist/select-next
 Invoke-RestMethod http://127.0.0.1:53999/api/playlist/current
 Invoke-RestMethod -Method Post http://127.0.0.1:53999/api/play-playlist
-Get-Content .\helper.log -Tail 30
+Get-Content "$env:APPDATA\RedragonSpotifyControl\logs\helper.log" -Tail 30
 ```
 
 ## Local files ignored by git

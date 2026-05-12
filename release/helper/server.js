@@ -13,7 +13,8 @@ const CONFIG_FILE = path.join(__dirname, "config.local.json");
 const TOKEN_FILE = path.join(__dirname, "tokens.local.json");
 const PLAYLIST_STATE_FILE = path.join(__dirname, "playlist-state.local.json");
 const DEVICE_STATE_FILE = path.join(__dirname, "device-state.local.json");
-const LOG_FILE = path.join(__dirname, "helper.log");
+const APP_LOG_DIR = path.join(process.env.APPDATA || __dirname, "RedragonSpotifyControl", "logs");
+const LOG_FILE = path.join(APP_LOG_DIR, "helper.log");
 const SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1";
@@ -46,9 +47,18 @@ function log(message, details) {
   console.log(line);
 
   try {
+    fs.mkdirSync(APP_LOG_DIR, { recursive: true });
     fs.appendFileSync(LOG_FILE, `${line}\n`, "utf8");
   } catch (error) {
   }
+}
+
+function errorDetails(error) {
+  return {
+    name: error && error.name ? error.name : null,
+    message: error && error.message ? error.message : String(error || ""),
+    stack: error && error.stack ? error.stack : null
+  };
 }
 
 function readJsonFile(filePath) {
@@ -1789,8 +1799,34 @@ async function handleRequest(req, res) {
 loadPlaylistState();
 loadDeviceState();
 
+log("helper process starting", {
+  pid: process.pid,
+  node: process.execPath,
+  cwd: process.cwd(),
+  helper_dir: __dirname,
+  config_file: CONFIG_FILE,
+  token_file: TOKEN_FILE,
+  playlist_state_file: PLAYLIST_STATE_FILE,
+  device_state_file: DEVICE_STATE_FILE,
+  log_file: LOG_FILE
+});
+
+process.on("uncaughtException", (error) => {
+  log("uncaught exception", errorDetails(error));
+  process.exitCode = 1;
+});
+
+process.on("unhandledRejection", (reason) => {
+  log("unhandled rejection", errorDetails(reason));
+});
+
 const server = http.createServer((req, res) => {
   handleRequest(req, res).catch((error) => {
+    log("request handler failed", {
+      method: req.method,
+      url: req.url,
+      error: errorDetails(error)
+    });
     sendJson(res, 500, {
       ok: false,
       error: error && error.message ? error.message : "Internal server error"
@@ -1798,7 +1834,15 @@ const server = http.createServer((req, res) => {
   });
 });
 
+server.on("error", (error) => {
+  log("server listen error", errorDetails(error));
+});
+
 server.listen(PORT, HOST, () => {
+  log("server listening", {
+    host: HOST,
+    port: PORT
+  });
   console.log(`Spotify helper stub listening at http://${HOST}:${PORT}`);
   console.log(`Spotify auth status: http://${HOST}:${PORT}/api/status`);
   console.log(`Spotify login URL: http://${HOST}:${PORT}/login`);

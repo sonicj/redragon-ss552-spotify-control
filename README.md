@@ -197,6 +197,18 @@ helper\uninstall-autostart-task.bat
 
 See [docs/UAC_AUTOSTART.md](docs/UAC_AUTOSTART.md) for the Windows 10/11 Task Scheduler design.
 
+Auto-start diagnostics are written to:
+
+```text
+%APPDATA%\RedragonSpotifyControl\logs\autostart.log
+```
+
+The helper server writes to:
+
+```text
+%APPDATA%\RedragonSpotifyControl\logs\helper.log
+```
+
 ## Rename Devices
 
 Some Spotify Connect devices show an ID-like name. You can rename them locally.
@@ -236,6 +248,13 @@ If the page does not load, run:
 helper\start-helper.bat
 ```
 
+To inspect scheduled-task startup logs:
+
+```powershell
+Get-Content "$env:APPDATA\RedragonSpotifyControl\logs\autostart.log" -Tail 80
+Get-Content "$env:APPDATA\RedragonSpotifyControl\logs\helper.log" -Tail 80
+```
+
 ### Spotify not authenticated
 
 Open:
@@ -245,6 +264,19 @@ http://127.0.0.1:53999/login
 ```
 
 Approve access again.
+
+### Only Open/Close Spotify Works
+
+The Open/Close button uses local Windows process control. Playback, shuffle, liked songs, playlists, device switching, volume, and now-playing require Spotify authentication and an active Spotify playback device.
+
+Check:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:53999/api/status
+Invoke-RestMethod http://127.0.0.1:53999/api/current
+```
+
+If `spotify_client_id_configured` or `spotify_authenticated` is `False`, finish Spotify setup and open `http://127.0.0.1:53999/login`.
 
 ### No active Spotify device
 
@@ -259,6 +291,40 @@ Some Spotify Connect devices do not expose volume control through Spotify. Try s
 Some personalized Spotify-made playlists, including Discover Weekly and Release Radar, can return 404 from Spotify's Web API even when the Spotify app can show them. The helper keeps those playlists visible and still tries playback when selected.
 
 Try opening the playlist in Spotify, following or saving it if possible, copying the link again, and pasting the new link into the playlist box.
+
+## Local User Data and Cleanup
+
+The release zip does not contain playlists, tokens, or Spotify credentials. Local helper data is stored beside the extracted helper:
+
+```text
+helper\config.local.json
+helper\tokens.local.json
+helper\playlist-state.local.json
+helper\device-state.local.json
+```
+
+StreamDock also stores per-key plugin settings in user profiles under:
+
+```text
+%APPDATA%\HotSpot\StreamDock\profiles\
+```
+
+Playlist text entered in the property inspector is saved there as `playlistList`. Removing only the plugin folder does not always remove existing StreamDock profile/key settings.
+
+To find stale playlist settings:
+
+```powershell
+Get-ChildItem "$env:APPDATA\HotSpot\StreamDock\profiles" -Recurse -Filter manifest.json | Select-String -Pattern "playlistList"
+```
+
+To remove helper-side local data from an extracted release folder:
+
+```powershell
+Remove-Item .\helper\config.local.json,.\helper\tokens.local.json,.\helper\playlist-state.local.json,.\helper\device-state.local.json -ErrorAction SilentlyContinue
+Remove-Item "$env:APPDATA\RedragonSpotifyControl" -Recurse -Force -ErrorAction SilentlyContinue
+```
+
+To fully clear StreamDock key settings, remove the Spotify keys from your StreamDock profile or delete/recreate the affected StreamDock profile in the StreamDock app.
 
 ## More Documentation
 
