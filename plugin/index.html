@@ -426,6 +426,15 @@ function setPlaylistTextTile(context, line1, line2) {
 
       function tick() {
         getFromHelper("/api/current", function (data) {
+          if (data && data.ok === false) {
+            if (data.error === "no_active_device" || data.error === "no_current_track") {
+              setWideNowPlayingTile(context, "Nothing playing", "");
+            } else {
+              setWideNowPlayingTile(context, "Spotify offline", "");
+            }
+            return;
+          }
+
           if (!data || !data.track) {
             setWideNowPlayingTile(context, "Nothing playing", "");
             return;
@@ -510,10 +519,12 @@ function setPlaylistTextTile(context, line1, line2) {
 
       if (data.action === "com.sonic.spotifycontrol.playpause") {
         getFromHelper("/api/current", function (resp) {
-          if (resp && resp.is_playing) {
+          if (resp && resp.ok === true && resp.is_playing) {
             setSvgIconTile(data.context, "images/svg/pause-fill.svg", "#1DB954");
-          } else {
+          } else if (resp && resp.ok === true) {
             setSvgIconTile(data.context, "images/svg/play-fill.svg", "#FFFFFF");
+          } else {
+            setSvgIconTile(data.context, "images/svg/play-fill.svg", "#9CA3AF");
           }
         }, function () {
           setSvgIconTile(data.context, "images/svg/play-fill.svg", "#9CA3AF");

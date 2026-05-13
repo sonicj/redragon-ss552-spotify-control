@@ -39,6 +39,9 @@ const state = {
 };
 
 const pendingLogins = new Map();
+const CURRENT_PLAYBACK_GRACE_MS = 20 * 1000;
+let lastKnownGoodCurrentPlayback = null;
+let lastKnownGoodCurrentPlaybackAt = 0;
 
 function log(message, details) {
   const detailText = details === undefined ? "" : ` ${JSON.stringify(details)}`;
@@ -477,8 +480,10 @@ function makePremiumRequiredResponse() {
 }
 
 function normalizeSpotifyError(status, payload) {
-  const spotifyError = payload && payload.error ? payload.error : {};
-  const rawMessage = String(spotifyError.message || payload.error_description || payload.error || "").trim();
+  const safePayload = payload && typeof payload === "object" ? payload : {};
+  const spotifyError = safePayload.error && typeof safePayload.error === "object" ? safePayload.error : {};
+  const scalarError = typeof safePayload.error === "string" ? safePayload.error : "";
+  const rawMessage = String(spotifyError.message || safePayload.error_description || scalarError || "").trim();
   const reason = String(spotifyError.reason || "").trim();
   const combined = `${rawMessage} ${reason}`.toLowerCase();
 
@@ -661,11 +666,27 @@ async function spotifyApiRequest(pathname, options) {
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(`${SPOTIFY_API_BASE_URL}${pathname}`, {
-    method: requestOptions.method || "GET",
-    headers,
-    body: requestOptions.body !== undefined ? JSON.stringify(requestOptions.body) : undefined
-  });
+  let response = null;
+
+  try {
+    response = await fetch(`${SPOTIFY_API_BASE_URL}${pathname}`, {
+      method: requestOptions.method || "GET",
+      headers,
+      body: requestOptions.body !== undefined ? JSON.stringify(requestOptions.body) : undefined
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      status: null,
+      error: {
+        ok: false,
+        connected: false,
+        error: "spotify_fetch_failed",
+        status: null,
+        message: error && error.message ? error.message : "Spotify request failed."
+      }
+    };
+  }
 
   if (response.status === 204) {
     return {
@@ -696,14 +717,65 @@ async function getCurrentPlayback() {
   const result = await spotifyApiRequest("/me/player");
 
   if (!result.ok) {
+    const cachedCurrent = getCachedCurrentPlaybackOnFetchFailure(result);
+    logSpotifyEndpointFailure("/api/current", result, Boolean(cachedCurrent));
+
+    if (cachedCurrent) {
+      return cachedCurrent;
+    }
+
     return result.error;
   }
 
   if (result.status === 204 || !result.data) {
+    clearLastKnownGoodCurrentPlayback();
     return makeNoActiveDeviceResponse();
   }
 
-  return makeCurrentResponse(result.data);
+  const current = makeCurrentResponse(result.data);
+  rememberLastKnownGoodCurrentPlayback(current);
+  return current;
+}
+
+function rememberLastKnownGoodCurrentPlayback(current) {
+  if (!current || !current.ok) {
+    return;
+  }
+
+  lastKnownGoodCurrentPlayback = { ...current };
+  lastKnownGoodCurrentPlaybackAt = Date.now();
+}
+
+function clearLastKnownGoodCurrentPlayback() {
+  lastKnownGoodCurrentPlayback = null;
+  lastKnownGoodCurrentPlaybackAt = 0;
+}
+
+function getCachedCurrentPlaybackOnFetchFailure(result) {
+  const isFetchFailure = Boolean(result && result.error && result.error.error === "spotify_fetch_failed");
+  const cacheAgeMs = Date.now() - lastKnownGoodCurrentPlaybackAt;
+  const isFreshEnough = lastKnownGoodCurrentPlayback && cacheAgeMs >= 0 && cacheAgeMs <= CURRENT_PLAYBACK_GRACE_MS;
+
+  if (!isFetchFailure || !isFreshEnough) {
+    return null;
+  }
+
+  return {
+    ...lastKnownGoodCurrentPlayback,
+    stale: true,
+    error: "spotify_fetch_failed"
+  };
+}
+
+function logSpotifyEndpointFailure(endpoint, result, cachedStateReturned) {
+  const error = result && result.error ? result.error : null;
+  log("spotify endpoint failed", {
+    endpoint,
+    spotify_status: result && Number.isInteger(result.status) ? result.status : null,
+    error: error && error.error ? error.error : "spotify_error",
+    message: error && error.message ? error.message : "Spotify request failed.",
+    cached_state_returned: Boolean(cachedStateReturned)
+  });
 }
 
 async function runPlaybackCommand(pathname, options) {
@@ -1221,12 +1293,20 @@ async function getCurrentTrackLikeState() {
   const currentTrack = await getCurrentTrackForLibrary();
 
   if (!currentTrack.ok) {
+    log("spotify endpoint failed", {
+      endpoint: "/api/current-like-state",
+      spotify_status: null,
+      error: currentTrack.error && currentTrack.error.error ? currentTrack.error.error : "current_track_unavailable",
+      message: currentTrack.error && currentTrack.error.message ? currentTrack.error.message : "Current track is unavailable.",
+      cached_state_returned: false
+    });
     return currentTrack.error;
   }
 
   const result = await spotifyApiRequest(`/me/library/contains?uris=${encodeURIComponent(currentTrack.track.track_uri)}`);
 
   if (!result.ok) {
+    logSpotifyEndpointFailure("/api/current-like-state", result, false);
     return {
       ...result.error,
       liked: false
