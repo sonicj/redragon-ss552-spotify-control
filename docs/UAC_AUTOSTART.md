@@ -2,7 +2,7 @@
 
 The helper does not need administrator rights. Keep the Spotify Web API helper as a normal per-user process on `127.0.0.1:53999`.
 
-Use the v1.0.4 Task Scheduler design: current user, normal privileges, and immediate run at user logon. Do not use the old Startup-folder shortcut flow.
+Use the v1.0.5 Task Scheduler design: current user, normal privileges, and immediate run at user logon. Do not use the old Startup-folder shortcut flow.
 
 Do not disable UAC system-wide and do not request `requireAdministrator` in the app manifest.
 
@@ -30,7 +30,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe)
             packageName = "Spotify Control Helper"
-            packageVersion = "1.0.4"
+            packageVersion = "1.0.5"
             windows {
                 perUserInstall = true
                 menuGroup = "Spotify Control Helper"

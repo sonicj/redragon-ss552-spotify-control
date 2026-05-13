@@ -1,4 +1,4 @@
-# Spotify Control for Redragon StreamDock v1.0.4
+# Spotify Control for Redragon StreamDock v1.0.5
 
 This release contains:
 
@@ -85,7 +85,7 @@ helper\start-helper-console.bat
 
 ## Optional Auto-Start With Windows
 
-Recommended for v1.0.4: to start the helper automatically and silently when you sign in to Windows, double-click this once from the extracted release:
+Recommended for v1.0.5: to start the helper automatically and silently when you sign in to Windows, double-click this once from the extracted release:
 
 ```text
 helper\install-autostart-task.bat

@@ -32,10 +32,10 @@ This project is Windows-focused.
 
 Download the latest release zip from this repository's GitHub Releases page.
 
-For v1.0.4, use:
+For v1.0.5, use:
 
 ```text
-redragon-ss552-spotify-control-v1.0.4.zip
+redragon-ss552-spotify-control-v1.0.5.zip
 ```
 
 ## Quick Install
@@ -179,7 +179,7 @@ Playlist button behavior:
 
 ## Auto-Start
 
-Recommended for v1.0.4: to start the helper automatically and silently when you sign in to Windows, run this once from the extracted release:
+Recommended for v1.0.5: to start the helper automatically and silently when you sign in to Windows, run this once from the extracted release:
 
 ```text
 helper\install-autostart-task.bat
