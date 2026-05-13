@@ -11,6 +11,7 @@
     const playlistHoldTimers = {};
     const playlistHoldTriggered = {};
     const visibleContextsByAction = {};
+    const lastLikeTileStateByContext = {};
 
     function registerVisibleContext(action, context) {
       if (!visibleContextsByAction[action]) {
@@ -491,7 +492,7 @@ function setPlaylistTextTile(context, line1, line2) {
       }
 
       tick();
-      pollers[context] = setInterval(tick, 2000);
+      pollers[context] = setInterval(tick, 15000);
     }
 
     function stopNowPlaying(context) {
@@ -551,38 +552,25 @@ function setPlaylistTextTile(context, line1, line2) {
       }
 
       if (data.action === "com.sonic.spotifycontrol.like") {
-        getFromHelper("/api/current", function (resp) {
-          if (resp && resp.track_id) {
-            const xhr = new XMLHttpRequest();
-            xhr.open("GET", "http://127.0.0.1:53999/api/current-like-state", true);
+        getFromHelper("/api/current-like-state", function (likeResp) {
+          if (likeResp && likeResp.ok === true) {
+            lastLikeTileStateByContext[data.context] = Boolean(likeResp.liked);
+            setSvgIconTile(data.context, "images/svg/heart-fill.svg", likeResp.liked ? "#1DB954" : "#FFFFFF");
+            return;
+          }
 
-            xhr.onload = function () {
-              if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                  const likeResp = JSON.parse(xhr.responseText);
-                  if (likeResp && likeResp.liked) {
-                    setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#1DB954");
-                  } else {
-                    setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#FFFFFF");
-                  }
-                } catch (e) {
-                  setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
-                }
-              } else {
-                setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
-              }
-            };
+          if (likeResp && likeResp.rate_limited && lastLikeTileStateByContext[data.context] !== undefined) {
+            setSvgIconTile(data.context, "images/svg/heart-fill.svg", lastLikeTileStateByContext[data.context] ? "#1DB954" : "#FFFFFF");
+            return;
+          }
 
-            xhr.onerror = function () {
-              setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
-            };
-
-            xhr.send();
+          setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
+        }, function () {
+          if (lastLikeTileStateByContext[data.context] !== undefined) {
+            setSvgIconTile(data.context, "images/svg/heart-fill.svg", lastLikeTileStateByContext[data.context] ? "#1DB954" : "#FFFFFF");
           } else {
             setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
           }
-        }, function () {
-          setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#9CA3AF");
         });
         return;
       }
@@ -749,8 +737,10 @@ function setPlaylistTextTile(context, line1, line2) {
                 const resp = JSON.parse(xhr.responseText);
 
                 if (resp && resp.liked === true) {
+                  lastLikeTileStateByContext[data.context] = true;
                   setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#1DB954");
                 } else if (resp && resp.liked === false) {
+                  lastLikeTileStateByContext[data.context] = false;
                   setSvgIconTile(data.context, "images/svg/heart-fill.svg", "#FFFFFF");
                 } else {
                   renderDefaultTile(data);

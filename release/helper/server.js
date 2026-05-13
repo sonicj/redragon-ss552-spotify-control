@@ -40,8 +40,11 @@ const state = {
 
 const pendingLogins = new Map();
 const CURRENT_PLAYBACK_GRACE_MS = 20 * 1000;
+const LIKE_STATE_CACHE_MS = 20 * 1000;
 let lastKnownGoodCurrentPlayback = null;
 let lastKnownGoodCurrentPlaybackAt = 0;
+const likeStateCacheByTrackId = new Map();
+const likeStateInFlightByTrackId = new Map();
 
 function log(message, details) {
   const detailText = details === undefined ? "" : ` ${JSON.stringify(details)}`;
@@ -544,6 +547,62 @@ function makeLikeStateResponse(track, liked) {
   };
 }
 
+function rememberLikeState(track, liked, extra) {
+  if (!track || !track.track_id) {
+    return null;
+  }
+
+  const response = {
+    ...makeLikeStateResponse(track, liked),
+    ...(extra || {})
+  };
+
+  likeStateCacheByTrackId.set(track.track_id, {
+    response,
+    fetchedAt: Date.now(),
+    retryUntil: extra && extra.retryUntil ? extra.retryUntil : 0
+  });
+
+  return response;
+}
+
+function getCachedLikeState(track, maxAgeMs) {
+  if (!track || !track.track_id) {
+    return null;
+  }
+
+  const cached = likeStateCacheByTrackId.get(track.track_id);
+  if (!cached || !cached.response) {
+    return null;
+  }
+
+  const ageMs = Date.now() - cached.fetchedAt;
+  if (maxAgeMs !== null && maxAgeMs !== undefined && (ageMs < 0 || ageMs > maxAgeMs)) {
+    return null;
+  }
+
+  return {
+    cacheEntry: cached,
+    response: {
+      ...cached.response,
+      cached: true,
+      cache_age_ms: Math.max(0, ageMs)
+    }
+  };
+}
+
+function updateLikeStateRetryUntil(track, retryUntil) {
+  if (!track || !track.track_id || !retryUntil) {
+    return;
+  }
+
+  const cached = likeStateCacheByTrackId.get(track.track_id);
+  if (cached) {
+    cached.retryUntil = retryUntil;
+    likeStateCacheByTrackId.set(track.track_id, cached);
+  }
+}
+
 async function requestSpotifyToken(params) {
   const response = await fetch(SPOTIFY_TOKEN_URL, {
     method: "POST",
@@ -697,11 +756,15 @@ async function spotifyApiRequest(pathname, options) {
   }
 
   const data = await readSpotifyResponse(response);
+  const retryAfterHeader = response.headers.get("retry-after");
+  const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : 0;
+  const retryAfterMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds * 1000 : 0;
 
   if (!response.ok) {
     return {
       ok: false,
       status: response.status,
+      retryAfterMs,
       error: normalizeSpotifyError(response.status, data)
     };
   }
@@ -1303,18 +1366,100 @@ async function getCurrentTrackLikeState() {
     return currentTrack.error;
   }
 
-  const result = await spotifyApiRequest(`/me/library/contains?uris=${encodeURIComponent(currentTrack.track.track_uri)}`);
+  const track = currentTrack.track;
+  const freshCached = getCachedLikeState(track, LIKE_STATE_CACHE_MS);
+
+  if (freshCached) {
+    log("like-state cache returned", {
+      track_id: track.track_id,
+      cache_age_ms: freshCached.response.cache_age_ms,
+      liked: freshCached.response.liked
+    });
+    return freshCached.response;
+  }
+
+  const staleCached = getCachedLikeState(track, null);
+  const retryUntil = staleCached && staleCached.cacheEntry ? staleCached.cacheEntry.retryUntil : 0;
+  const now = Date.now();
+
+  if (staleCached && retryUntil && retryUntil > now) {
+    log("like-state retry-after cache returned", {
+      track_id: track.track_id,
+      retry_after_remaining_ms: retryUntil - now,
+      cache_age_ms: staleCached.response.cache_age_ms,
+      liked: staleCached.response.liked
+    });
+    return {
+      ...staleCached.response,
+      rate_limited: true,
+      retry_after_ms: retryUntil - now
+    };
+  }
+
+  if (likeStateInFlightByTrackId.has(track.track_id)) {
+    log("like-state in-flight request reused", {
+      track_id: track.track_id
+    });
+    return likeStateInFlightByTrackId.get(track.track_id);
+  }
+
+  const requestPromise = fetchCurrentTrackLikeState(track, staleCached ? staleCached.response : null);
+  likeStateInFlightByTrackId.set(track.track_id, requestPromise);
+
+  try {
+    return await requestPromise;
+  } finally {
+    likeStateInFlightByTrackId.delete(track.track_id);
+  }
+}
+
+async function fetchCurrentTrackLikeState(track, staleCachedResponse) {
+  log("like-state Spotify request started", {
+    track_id: track.track_id,
+    track_uri: track.track_uri,
+    has_cached_state: Boolean(staleCachedResponse)
+  });
+
+  const result = await spotifyApiRequest(`/me/library/contains?uris=${encodeURIComponent(track.track_uri)}`);
 
   if (!result.ok) {
-    logSpotifyEndpointFailure("/api/current-like-state", result, false);
+    const retryAfterMs = result.retryAfterMs || (result.status === 429 ? LIKE_STATE_CACHE_MS : 0);
+    const isRateLimited = result.status === 429 || (result.error && /rate limit/i.test(String(result.error.message || "")));
+
+    if (isRateLimited && staleCachedResponse) {
+      const retryUntil = Date.now() + (retryAfterMs || LIKE_STATE_CACHE_MS);
+      updateLikeStateRetryUntil(track, retryUntil);
+      log("like-state rate limited; cached state returned", {
+        track_id: track.track_id,
+        spotify_status: result.status,
+        retry_after_ms: retryAfterMs || LIKE_STATE_CACHE_MS,
+        cache_age_ms: staleCachedResponse.cache_age_ms,
+        liked: staleCachedResponse.liked
+      });
+      return {
+        ...staleCachedResponse,
+        cached: true,
+        rate_limited: true,
+        retry_after_ms: retryAfterMs || LIKE_STATE_CACHE_MS
+      };
+    }
+
+    logSpotifyEndpointFailure("/api/current-like-state", result, Boolean(isRateLimited && staleCachedResponse));
     return {
       ...result.error,
-      liked: false
+      liked: staleCachedResponse ? staleCachedResponse.liked : false,
+      cached: Boolean(staleCachedResponse),
+      rate_limited: Boolean(isRateLimited),
+      retry_after_ms: retryAfterMs
     };
   }
 
   const liked = Array.isArray(result.data) ? Boolean(result.data[0]) : false;
-  return makeLikeStateResponse(currentTrack.track, liked);
+  log("like-state Spotify request ok", {
+    track_id: track.track_id,
+    liked
+  });
+  return rememberLikeState(track, liked);
 }
 
 async function toggleCurrentTrackLikeState() {
@@ -1343,7 +1488,9 @@ async function toggleCurrentTrackLikeState() {
     };
   }
 
-  return makeLikeStateResponse(currentTrack.track, nextLiked);
+  return rememberLikeState(currentTrack.track, nextLiked, {
+    cached: false
+  });
 }
 
 function getSelectedPlaylistOrError() {
